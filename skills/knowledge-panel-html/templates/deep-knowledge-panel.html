@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<!--
+  deep-knowledge-panel.html
+  ─────────────────────────────────────────────────────────────────────────────
+  Reusable template for dark-mode deep-dive / reference knowledge-panel pages.
+
+  STYLE DNA
+  ─────────────────────────────────────────────────────────────────────────────
+  • Dark navy canvas (#0D1B2A) with animated particle network
+  • Fixed left sidebar (220 px) with grouped anchor navigation
+  • Large serif hero headline + mono eyebrow chip
+  • Numbered sections: ghost serif numeral + gold mono label
+  • Mixed-content modules: arch-strip, concept-grid, feature-grid,
+    compare-table, process-flow, code-block, analogy-box, summary-box
+  • Restrained gold (#C9A84C) + cyan (#4ECDC4) accents
+  • Scroll-reveal fade-up, active sidebar link highlight, canvas particles
+
+  USAGE
+  ─────────────────────────────────────────────────────────────────────────────
+  1. Replace EVERY <!-- REPLACE: … --> comment with your own content.
+  2. Adjust --* CSS variables at :root to re-skin if needed.
+  3. Update the <aside class="sidebar"> nav links + section ids together.
+  4. Duplicate or remove section blocks as needed.
+  5. The page is completely self-contained — no external deps, no build step.
+
+  COMPONENT QUICK-REF
+  ─────────────────────────────────────────────────────────────────────────────
+  .hero                     Hero area (eyebrow · title · subtitle · tags · divider)
+  .analogy-box              Horizontal icon + prose callout card
+  .sec-header               Large ghost numeral + gold label + bold title
+  .sec-divider              Full-width gradient rule between sections
+  .info-box                 Gold left-border info callout
+  .arch-strip               Flex architecture diagram (arch-box + arch-connector)
+  .concept-grid             Top-accent-border 2-col concept cards (.cc)
+  .feature-grid             Left-accent-border feature cards (.fc)
+  .compare-table            Mono-header comparison table inside .compare-wrap
+  .process-flow             Horizontal step cards with → arrow connectors
+    .pf-step--last          Gold-accent final step
+  .code-block               Dark code panel with language label
+  .summary-box              Gold-top-border closing summary
+  .badge                    Inline mono chip: --cyan | --gold | --gray | --red
+-->
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- REPLACE: page title -->
+  <title><!-- REPLACE: Topic Name --> — Deep Dive</title>
+  <style>
+    /* ─── Design Tokens ─────────────────────────────────────────────────── */
+    :root {
+      /* Palette — adjust here to re-skin */
+      --bg:           #0D1B2A;
+      --bg-layer:     #122030;
+      --bg-card:      #162535;
+      --bg-card-2:    #1C2E40;
+      --border:       rgba(78, 205, 196, 0.13);
+      --border-soft:  rgba(78, 205, 196, 0.06);
+
+      --gold:         #C9A84C;
+      --gold-dim:     rgba(201, 168, 76, 0.18);
+      --gold-glow:    rgba(201, 168, 76, 0.07);
+
+      --cyan:         #4ECDC4;
+      --cyan-dim:     rgba(78, 205, 196, 0.10);
+      --cyan-text:    #81E0DA;
+
+      --text:         #E8EDF2;
+      --text-muted:   #8A9BAB;
+      --text-light:   #4A5D6E;
+
+      /* Layout */
+      --sidebar-w: 220px;
+
+      /* Typography */
+      --font-serif: Georgia, "Palatino Linotype", "Book Antiqua", serif;
+      --font-mono:  "SFMono-Regular", "Fira Code", "Consolas", monospace;
+      --font-sans:  -apple-system, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+
+      /* Fluid Typography */
+      --text-base: clamp(1.125rem, 1.1rem + 0.25vw, 1.25rem);
+      --text-h1:   clamp(2.25rem, 4.25vw, 3.45rem);
+      --text-h2:   clamp(1.55rem, 2.75vw, 1.85rem);
+      --text-h3:   clamp(1.35rem, 2.05vw, 1.55rem);
+
+      /* Fluid Spacing */
+      --gap-xs: .375rem;
+      --gap-sm: .75rem;
+      --gap-md: 1.25rem;
+      --gap-lg: clamp(1.25rem, 4vw, 2rem);
+      --gap-xl: clamp(2rem, 6vw, 3rem);
+
+      /* Radii */
+      --r-sm: 4px;
+      --r-md: 8px;
+      --r-lg: 14px;
+    }
+
+    /* ─── Reset ─────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: var(--text-base);
+      line-height: 1.75;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    a { color: var(--cyan); text-decoration: none; text-underline-offset: 4px; }
+    a:hover { color: var(--cyan-text); }
+
+    /* ─── Canvas Background ─────────────────────────────────────────────── */
+    #bg-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: .45;
+    }
+
+    /* ─── Sidebar ───────────────────────────────────────────────────────── */
+    .sidebar {
+      position: fixed;
+      left: 0; top: 0; bottom: 0;
+      width: var(--sidebar-w);
+      background: rgba(13, 27, 42, .94);
+      border-right: 1px solid var(--border);
+      backdrop-filter: blur(14px);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      padding: var(--gap-lg) 0;
+      overflow-y: auto;
+    }
+    .sidebar__brand {
+      padding: 0 var(--gap-md) var(--gap-lg);
+      border-bottom: 1px solid var(--border-soft);
+      margin-bottom: var(--gap-md);
+    }
+    .sidebar__brand-label {
+      font-family: var(--font-mono);
+      font-size: .62rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--text-light);
+      margin-bottom: .3rem;
+    }
+    .sidebar__brand-title {
+      font-family: var(--font-serif);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--gold);
+      line-height: 1.35;
+    }
+    .sidebar__group-label {
+      font-family: var(--font-mono);
+      font-size: .58rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--text-light);
+      padding: 0 var(--gap-md);
+      margin: var(--gap-sm) 0 .2rem;
+      display: block;
+    }
+    .sidebar__nav { list-style: none; }
+    .sidebar__nav a {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .38rem var(--gap-md);
+      font-size: .78rem;
+      color: var(--text-muted);
+      transition: color .2s, background .2s;
+      border-left: 2px solid transparent;
+    }
+    .sidebar__nav .nav-num {
+      font-family: var(--font-mono);
+      font-size: .62rem;
+      color: var(--text-light);
+      min-width: 1.6em;
+    }
+    .sidebar__nav a:hover,
+    .sidebar__nav a.active {
+      color: var(--cyan-text);
+      background: var(--cyan-dim);
+      border-left-color: var(--cyan);
+    }
+
+    /* ─── Main Content ──────────────────────────────────────────────────── */
+    .main {
+      margin-left: var(--sidebar-w);
+      position: relative;
+      z-index: 1;
+    }
+    .content-wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: var(--gap-xl) var(--gap-xl);
+    }
+
+    /* ─── Hero ──────────────────────────────────────────────────────────── */
+    .hero { margin-bottom: var(--gap-xl); }
+    .hero__eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      font-family: var(--font-mono);
+      font-size: .68rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--gold);
+      border: 1px solid var(--gold-dim);
+      background: var(--gold-glow);
+      padding: .28rem .85rem;
+      border-radius: var(--r-sm);
+      margin-bottom: var(--gap-md);
+    }
+    .hero__title {
+      font-family: var(--font-serif);
+      font-size: var(--text-h1);
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.2;
+      margin-bottom: var(--gap-sm);
+    }
+    /* Wrap a word in <em> for cyan accent */
+    .hero__title em { font-style: normal; color: var(--cyan); }
+    .hero__subtitle {
+      font-size: 1rem;
+      color: var(--text-muted);
+      max-width: 640px;
+      line-height: 1.75;
+      margin-bottom: var(--gap-lg);
+    }
+    .hero__tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--gap-xs);
+      margin-bottom: var(--gap-lg);
+    }
+    .tag {
+      font-family: var(--font-mono);
+      font-size: .68rem;
+      padding: 2px 8px;
+      border-radius: 3px;
+      background: var(--bg-card-2);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .hero__divider {
+      height: 1px;
+      background: linear-gradient(90deg, var(--gold) 0%, transparent 65%);
+      opacity: .3;
+    }
+
+    /* ─── Sections ──────────────────────────────────────────────────────── */
+    .section {
+      margin-bottom: var(--gap-xl);
+      opacity: 0;
+      transform: translateY(18px);
+      transition: opacity .6s ease, transform .6s ease;
+    }
+    .section.visible { opacity: 1; transform: none; }
+
+    .sec-header {
+      display: flex;
+      align-items: flex-end;
+      gap: var(--gap-md);
+      margin-bottom: var(--gap-lg);
+    }
+    .sec-header__num {
+      font-family: var(--font-serif);
+      font-size: 4.5rem;
+      font-weight: 700;
+      color: var(--bg-card-2);
+      line-height: 1;
+      user-select: none;
+      flex-shrink: 0;
+    }
+    .sec-header__meta { padding-bottom: .4rem; }
+    .sec-header__label {
+      font-family: var(--font-mono);
+      font-size: .62rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: .2rem;
+    }
+    .sec-header__title {
+      font-size: var(--text-h2);
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* ─── Section Divider ───────────────────────────────────────────────── */
+    .sec-divider {
+      height: 1px;
+      background: linear-gradient(90deg, var(--border) 0%, transparent 75%);
+      margin: var(--gap-xl) 0;
+    }
+
+    /* ─── Info Box ──────────────────────────────────────────────────────── */
+    .info-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--gold);
+      border-radius: 0 var(--r-md) var(--r-md) 0;
+      padding: var(--gap-md) var(--gap-lg);
+      margin-bottom: var(--gap-lg);
+    }
+    .info-box p { font-size: .88rem; color: var(--text-muted); line-height: 1.75; }
+    .info-box strong { color: var(--text); }
+
+    /* ─── Prose ─────────────────────────────────────────────────────────── */
+    .prose p { color: var(--text-muted); margin-bottom: var(--gap-sm); font-size: .9rem; }
+    .prose strong { color: var(--text); }
+
+    /* ─── Architecture Strip ────────────────────────────────────────────── */
+    .arch-strip {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: var(--gap-lg);
+    }
+    .arch-row {
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      gap: var(--gap-sm);
+      flex-wrap: wrap;
+    }
+    .arch-box {
+      flex: 1 1 180px;
+      background: var(--bg-card-2);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      padding: var(--gap-md);
+      text-align: center;
+      transition: border-color .2s;
+    }
+    .arch-box:hover { border-color: var(--cyan); }
+    /* Gold top accent for the "host" / primary box */
+    .arch-box--host { border-top: 2px solid var(--gold); }
+    .arch-box--host:hover { border-top-color: var(--gold); border-color: var(--gold); }
+    .arch-box__role {
+      font-family: var(--font-mono);
+      font-size: .6rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--text-light);
+      margin-bottom: .3rem;
+    }
+    .arch-box__name {
+      font-weight: 700;
+      font-size: .95rem;
+      color: var(--cyan-text);
+      margin-bottom: .35rem;
+    }
+    .arch-box--host .arch-box__name { color: var(--gold); }
+    .arch-box__desc { font-size: .73rem; color: var(--text-muted); line-height: 1.55; }
+    .arch-connector {
+      display: flex;
+      align-items: center;
+      color: var(--text-light);
+      font-size: 1.1rem;
+      padding: 0 .1rem;
+      flex-shrink: 0;
+    }
+    .arch-footer {
+      font-family: var(--font-mono);
+      font-size: .63rem;
+      color: var(--text-light);
+      text-align: center;
+      margin-top: var(--gap-md);
+      letter-spacing: .06em;
+      border-top: 1px solid var(--border-soft);
+      padding-top: var(--gap-sm);
+    }
+
+    /* ─── Concept Cards ─────────────────────────────────────────────────── */
+    .concept-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: var(--gap-md);
+      list-style: none;
+    }
+    .cc {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--cyan);
+      border-radius: 0 0 var(--r-md) var(--r-md);
+      padding: var(--gap-md);
+      transition: box-shadow .2s;
+    }
+    .cc:hover { box-shadow: 0 4px 20px rgba(78,205,196,.07); }
+    /* Modifier classes for accent colour */
+    .cc--gold { border-top-color: var(--gold); }
+    .cc--gold:hover { box-shadow: 0 4px 20px rgba(201,168,76,.07); }
+    .cc--red  { border-top-color: #C0555A; }
+    .cc__icon { font-size: 1.3rem; margin-bottom: .45rem; line-height: 1; }
+    .cc__heading { font-weight: 700; font-size: .92rem; color: var(--cyan-text); margin-bottom: var(--gap-xs); }
+    .cc--gold .cc__heading { color: var(--gold); }
+    .cc--red  .cc__heading { color: #E07880; }
+    .cc__body { font-size: .81rem; color: var(--text-muted); line-height: 1.65; }
+
+    /* ─── Feature Cards ─────────────────────────────────────────────────── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: var(--gap-md);
+      list-style: none;
+    }
+    .fc {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--cyan);
+      border-radius: 0 var(--r-md) var(--r-md) 0;
+      padding: var(--gap-md);
+      transition: border-left-color .2s, box-shadow .2s;
+    }
+    .fc:hover { border-left-color: var(--gold); box-shadow: 0 2px 12px rgba(201,168,76,.07); }
+    .fc__icon { font-size: 1.4rem; margin-bottom: .5rem; line-height: 1; }
+    .fc__title {
+      font-family: var(--font-mono);
+      font-size: .85rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: .3rem;
+    }
+    .fc__desc { font-size: .78rem; color: var(--text-muted); line-height: 1.6; }
+
+    /* ─── Comparison Table ──────────────────────────────────────────────── */
+    .compare-wrap { overflow-x: auto; }
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .83rem;
+    }
+    .compare-table th {
+      background: var(--bg-card-2);
+      color: var(--gold);
+      font-family: var(--font-mono);
+      font-size: .68rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      text-align: left;
+      padding: .6rem 1rem;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .compare-table td {
+      padding: .6rem 1rem;
+      border-bottom: 1px solid var(--border-soft);
+      color: var(--text-muted);
+      vertical-align: top;
+    }
+    .compare-table td:first-child {
+      color: var(--cyan-text);
+      font-family: var(--font-mono);
+      font-weight: 600;
+      font-size: .8rem;
+      white-space: nowrap;
+    }
+    .compare-table tr:hover td { background: rgba(78,205,196,.04); }
+
+    /* ─── Badge Chips ───────────────────────────────────────────────────── */
+    .badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: .66rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 3px;
+      letter-spacing: .04em;
+    }
+    .badge--cyan  { background: var(--cyan-dim);              color: var(--cyan-text); }
+    .badge--gold  { background: var(--gold-dim);              color: var(--gold); }
+    .badge--gray  { background: rgba(255,255,255,.06);        color: var(--text-muted); }
+    .badge--red   { background: rgba(192,85,90,.15);          color: #E07880; }
+
+    /* ─── Process Flow ──────────────────────────────────────────────────── */
+    .process-flow {
+      display: flex;
+      gap: 0;
+      list-style: none;
+      overflow-x: auto;
+      padding-bottom: var(--gap-xs);
+    }
+    .pf-step {
+      flex: 1 0 155px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      padding: var(--gap-md);
+      position: relative;
+      transition: border-color .2s;
+    }
+    .pf-step + .pf-step { margin-left: 28px; }
+    .pf-step + .pf-step::before {
+      content: "→";
+      position: absolute;
+      left: -21px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1rem;
+      color: var(--cyan);
+    }
+    .pf-step:hover { border-color: var(--cyan); }
+    /* Gold-accent final step */
+    .pf-step--last { border-color: var(--gold); background: var(--gold-glow); }
+    .pf-step__num {
+      font-family: var(--font-mono);
+      font-size: .63rem;
+      color: var(--cyan);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 4px;
+    }
+    .pf-step--last .pf-step__num { color: var(--gold); }
+    .pf-step__title { font-weight: 700; font-size: .9rem; margin-bottom: 4px; }
+    .pf-step__desc {
+      font-size: .74rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      line-height: 1.5;
+    }
+
+    /* ─── Code Block ────────────────────────────────────────────────────── */
+    .code-block {
+      position: relative;
+      background: #091622;
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      overflow: hidden;
+    }
+    .code-block__lang {
+      position: absolute;
+      top: .55rem; right: .85rem;
+      font-family: var(--font-mono);
+      font-size: .6rem;
+      color: var(--text-light);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .code-block pre {
+      padding: var(--gap-lg);
+      margin: 0;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: .8rem;
+      line-height: 1.75;
+      color: #A8C7D6;
+    }
+    /* Syntax highlight helpers — apply as <span class="kw"> etc. */
+    .kw  { color: #C792EA; }
+    .str { color: #C3E88D; }
+    .cm  { color: #78909C; font-style: italic; }
+    .fn  { color: #82AAFF; }
+    .num { color: #F78C6C; }
+    .key { color: var(--cyan-text); }
+
+    /* ─── Analogy Box ───────────────────────────────────────────────────── */
+    .analogy-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: var(--gap-lg);
+      display: flex;
+      align-items: center;
+      gap: var(--gap-lg);
+    }
+    .analogy-icon { font-size: 2.5rem; flex-shrink: 0; line-height: 1; }
+    .analogy-content__label {
+      font-family: var(--font-mono);
+      font-size: .62rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: .3rem;
+    }
+    .analogy-content p { font-size: .88rem; color: var(--text-muted); line-height: 1.7; }
+    .analogy-content strong { color: var(--text); }
+
+    /* ─── Summary Box ───────────────────────────────────────────────────── */
+    .summary-box {
+      background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-card-2) 100%);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--gold);
+      border-radius: var(--r-lg);
+      padding: var(--gap-lg);
+    }
+    .summary-box__label {
+      font-family: var(--font-mono);
+      font-size: .63rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: var(--gap-sm);
+    }
+    .summary-box__title {
+      font-family: var(--font-serif);
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: var(--gap-sm);
+    }
+    .summary-box p { font-size: .88rem; color: var(--text-muted); line-height: 1.8; }
+    .summary-box p + p { margin-top: var(--gap-sm); }
+
+    /* ─── Glassmorphism Surfaces ────────────────────────────────────────────── */
+    .arch-strip, .info-box, .cc, .fc {
+      background: rgba(22, 37, 53, 0.65);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    /* ─── Code Block Scrollbar ──────────────────────────────────────────────── */
+    .code-block pre::-webkit-scrollbar { height: 6px; }
+    .code-block pre::-webkit-scrollbar-thumb { background: rgba(255,255,255,.2); border-radius: 4px; }
+
+    /* ─── Mobile Menu Button ───────────────────────────────────────────────────── */
+    .mob-menu-btn {
+      display: none;
+      position: fixed;
+      top: var(--gap-md);
+      right: var(--gap-md);
+      z-index: 200;
+      width: 38px;
+      height: 38px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--r-sm);
+      cursor: pointer;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 0;
+    }
+    .mob-menu-btn span {
+      display: block;
+      width: 18px;
+      height: 2px;
+      background: var(--text-muted);
+      border-radius: 1px;
+      transition: transform .25s, opacity .25s;
+    }
+    .mob-menu-btn.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .mob-menu-btn.open span:nth-child(2) { opacity: 0; }
+    .mob-menu-btn.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+    .mob-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 98;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(3px);
+    }
+    .mob-overlay.open { display: block; }
+
+    /* ─── Mobile ────────────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .mob-menu-btn { display: flex; }
+      .sidebar {
+        transform: translateX(-100%);
+        transition: transform .3s ease;
+        z-index: 99;
+      }
+      .sidebar.open { transform: translateX(0); }
+      .main    { margin-left: 0; }
+      .content-wrap { padding: var(--gap-lg) var(--gap-md); }
+      .arch-row { flex-direction: column; align-items: stretch; }
+      .arch-connector { transform: rotate(90deg); align-self: center; }
+      .process-flow { flex-direction: column; gap: var(--gap-sm); }
+      .pf-step + .pf-step { margin-left: 0; margin-top: 28px; }
+      .pf-step + .pf-step::before {
+        content: "↓";
+        left: 50%; top: -22px;
+        transform: translateX(-50%);
+      }
+      .analogy-box { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Mobile Menu Button & Overlay -->
+<button class="mob-menu-btn" aria-label="Open navigation" onclick="toggleNav()">
+  <span></span><span></span><span></span>
+</button>
+<div class="mob-overlay" onclick="toggleNav()"></div>
+
+<!-- Background Canvas -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     SIDEBAR
+     • Update .sidebar__brand-label / .sidebar__brand-title with topic name
+     • Add/remove <span class="sidebar__group-label"> groups as needed
+     • Each <li><a href="#SECTION_ID"> must match a section id below
+═══════════════════════════════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar__brand">
+    <!-- REPLACE: document type label, e.g. "Protocol Spec" or "Deep Dive" -->
+    <div class="sidebar__brand-label"><!-- REPLACE: doc type --></div>
+    <!-- REPLACE: abbreviated topic name, shown in gold serif -->
+    <div class="sidebar__brand-title"><!-- REPLACE: topic name --></div>
+  </div>
+
+  <!-- REPLACE: add/remove sidebar groups and links to match your sections -->
+  <span class="sidebar__group-label"><!-- REPLACE: group label --></span>
+  <ul class="sidebar__nav">
+    <li><a href="#intro"><span class="nav-num">00</span><!-- REPLACE: link text --></a></li>
+  </ul>
+
+  <span class="sidebar__group-label"><!-- REPLACE: group label --></span>
+  <ul class="sidebar__nav">
+    <li><a href="#section-01"><span class="nav-num">01</span><!-- REPLACE --></a></li>
+    <li><a href="#section-02"><span class="nav-num">02</span><!-- REPLACE --></a></li>
+    <li><a href="#section-03"><span class="nav-num">03</span><!-- REPLACE --></a></li>
+  </ul>
+</aside>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     MAIN
+══════════════════════════════════════════════════════════════════════════ -->
+<main class="main">
+  <div class="content-wrap">
+
+    <!-- ══════════════════════════════════════════════
+         HERO
+         id="intro" must match the sidebar anchor.
+    ═══════════════════════════════════════════════ -->
+    <section class="hero" id="intro">
+
+      <!-- Eyebrow: mono chip above the title -->
+      <div class="hero__eyebrow">
+        <!-- Inline SVG icon — swap freely -->
+        <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" aria-hidden="true">
+          <path d="M8 0a8 8 0 100 16A8 8 0 008 0zm0 3.5a.5.5 0 01.5.5v4.146l2.354 2.354a.5.5 0 01-.708.708l-2.5-2.5A.5.5 0 017.5 8V4a.5.5 0 01.5-.5z"/>
+        </svg>
+        <!-- REPLACE: eyebrow text, e.g. "Open Standard · 2024" -->
+        <!-- REPLACE: eyebrow text -->
+      </div>
+
+      <!-- Title: wrap one word in <em> for cyan accent -->
+      <h1 class="hero__title">
+        <!-- REPLACE: hero title, e.g. "Model Context<br><em>Protocol</em>" -->
+        <!-- REPLACE: title -->
+      </h1>
+
+      <!-- Subtitle: 1–2 sentence overview -->
+      <p class="hero__subtitle">
+        <!-- REPLACE: subtitle -->
+      </p>
+
+      <!-- Tags: add/remove <span class="tag"> chips -->
+      <div class="hero__tags">
+        <span class="tag"><!-- REPLACE: tag --></span>
+        <span class="tag"><!-- REPLACE: tag --></span>
+      </div>
+
+      <div class="hero__divider"></div>
+
+      <!-- Optional analogy box — remove if not needed -->
+      <div class="analogy-box" style="margin-top: var(--gap-xl);">
+        <div class="analogy-icon"><!-- REPLACE: emoji icon, e.g. 🔌 --></div>
+        <div class="analogy-content">
+          <!-- REPLACE: callout label, e.g. "Core Analogy" -->
+          <div class="analogy-content__label"><!-- REPLACE: label --></div>
+          <p>
+            <!-- REPLACE: analogy / intro prose -->
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <div class="sec-divider"></div>
+
+    <!-- ══════════════════════════════════════════════
+         SECTION 01 — Architecture strip variant
+         Best for: component / actor role diagrams
+    ═══════════════════════════════════════════════ -->
+    <section class="section" id="section-01">
+      <div class="sec-header">
+        <div class="sec-header__num">01</div>
+        <div class="sec-header__meta">
+          <!-- REPLACE: mono label, e.g. "Core Architecture" -->
+          <div class="sec-header__label"><!-- REPLACE: label --></div>
+          <!-- REPLACE: section title -->
+          <h2 class="sec-header__title"><!-- REPLACE: title --></h2>
+        </div>
+      </div>
+
+      <!-- Optional info callout -->
+      <div class="info-box">
+        <p><!-- REPLACE: one-sentence context / summary --></p>
+      </div>
+
+      <!-- Architecture diagram strip -->
+      <div class="arch-strip">
+        <div class="arch-row">
+          <!-- First box gets gold top accent (--host modifier) -->
+          <div class="arch-box arch-box--host">
+            <div class="arch-box__role"><!-- REPLACE: role label --></div>
+            <div class="arch-box__name"><!-- REPLACE: name --></div>
+            <div class="arch-box__desc"><!-- REPLACE: description --></div>
+          </div>
+          <div class="arch-connector">⟷</div>
+          <div class="arch-box">
+            <div class="arch-box__role"><!-- REPLACE: role label --></div>
+            <div class="arch-box__name"><!-- REPLACE: name --></div>
+            <div class="arch-box__desc"><!-- REPLACE: description --></div>
+          </div>
+          <div class="arch-connector">⟷</div>
+          <div class="arch-box">
+            <div class="arch-box__role"><!-- REPLACE: role label --></div>
+            <div class="arch-box__name"><!-- REPLACE: name --></div>
+            <div class="arch-box__desc"><!-- REPLACE: description --></div>
+          </div>
+          <!-- ↑ Duplicate arch-box + arch-connector pairs as needed -->
+        </div>
+        <!-- Optional footer annotation -->
+        <div class="arch-footer"><!-- REPLACE: footer annotation --></div>
+      </div>
+    </section>
+
+    <div class="sec-divider"></div>
+
+    <!-- ══════════════════════════════════════════════
+         SECTION 02 — Concept cards + code block
+         Best for: definitions / primitives + example
+    ═══════════════════════════════════════════════ -->
+    <section class="section" id="section-02">
+      <div class="sec-header">
+        <div class="sec-header__num">02</div>
+        <div class="sec-header__meta">
+          <div class="sec-header__label"><!-- REPLACE: label --></div>
+          <h2 class="sec-header__title"><!-- REPLACE: title --></h2>
+        </div>
+      </div>
+
+      <div class="prose">
+        <p><!-- REPLACE: intro paragraph --></p>
+      </div>
+
+      <!-- Concept cards: default cyan / .cc--gold / .cc--red -->
+      <ul class="concept-grid" style="margin-top: var(--gap-lg);">
+        <li class="cc">
+          <div class="cc__icon"><!-- REPLACE: emoji --></div>
+          <div class="cc__heading"><!-- REPLACE: heading --></div>
+          <div class="cc__body"><!-- REPLACE: body text --></div>
+        </li>
+        <li class="cc cc--gold">
+          <div class="cc__icon"><!-- REPLACE: emoji --></div>
+          <div class="cc__heading"><!-- REPLACE: heading --></div>
+          <div class="cc__body"><!-- REPLACE: body text --></div>
+        </li>
+        <li class="cc cc--red">
+          <div class="cc__icon"><!-- REPLACE: emoji --></div>
+          <div class="cc__heading"><!-- REPLACE: heading --></div>
+          <div class="cc__body"><!-- REPLACE: body text --></div>
+        </li>
+        <!-- ↑ Duplicate <li class="cc"> for more cards -->
+      </ul>
+
+      <!-- Optional code block -->
+      <div class="code-block" style="margin-top: var(--gap-xl);">
+        <!-- REPLACE: language label, e.g. "JSON-RPC 2.0" or "TypeScript" -->
+        <div class="code-block__lang"><!-- REPLACE: language --></div>
+        <pre>
+<span class="cm">// REPLACE: code content</span>
+<span class="cm">// Use .kw .str .cm .fn .num .key spans for syntax highlighting</span>
+        </pre>
+      </div>
+    </section>
+
+    <div class="sec-divider"></div>
+
+    <!-- ══════════════════════════════════════════════
+         SECTION 03 — Comparison table + feature grid
+         Best for: option comparison + capabilities list
+    ═══════════════════════════════════════════════ -->
+    <section class="section" id="section-03">
+      <div class="sec-header">
+        <div class="sec-header__num">03</div>
+        <div class="sec-header__meta">
+          <div class="sec-header__label"><!-- REPLACE: label --></div>
+          <h2 class="sec-header__title"><!-- REPLACE: title --></h2>
+        </div>
+      </div>
+
+      <div class="prose">
+        <p><!-- REPLACE: intro paragraph --></p>
+      </div>
+
+      <!-- Comparison table -->
+      <div class="compare-wrap" style="margin-top: var(--gap-lg);">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <!-- REPLACE: column headers -->
+              <th><!-- col 1 --></th>
+              <th><!-- col 2 --></th>
+              <th><!-- col 3 --></th>
+              <th><!-- col 4 --></th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- REPLACE: table rows — first <td> is cyan mono, rest are muted -->
+            <tr>
+              <td><!-- key --> <span class="badge badge--cyan"><!-- REPLACE --></span></td>
+              <td><!-- value --></td>
+              <td><!-- value --></td>
+              <td><!-- value --></td>
+            </tr>
+            <tr>
+              <td><!-- key --> <span class="badge badge--gray"><!-- REPLACE --></span></td>
+              <td><!-- value --></td>
+              <td><!-- value --></td>
+              <td><!-- value --></td>
+            </tr>
+            <tr>
+              <td><!-- key --> <span class="badge badge--gold"><!-- REPLACE --></span></td>
+              <td><!-- value --></td>
+              <td><!-- value --></td>
+              <td><!-- value --></td>
+            </tr>
+            <!-- ↑ Duplicate <tr> as needed -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Feature cards -->
+      <ul class="feature-grid" style="margin-top: var(--gap-lg);">
+        <li class="fc">
+          <div class="fc__icon"><!-- REPLACE: emoji or inline SVG --></div>
+          <div class="fc__title"><!-- REPLACE: mono title --></div>
+          <div class="fc__desc"><!-- REPLACE: description --></div>
+        </li>
+        <li class="fc">
+          <div class="fc__icon"><!-- REPLACE --></div>
+          <div class="fc__title"><!-- REPLACE --></div>
+          <div class="fc__desc"><!-- REPLACE --></div>
+        </li>
+        <li class="fc">
+          <div class="fc__icon"><!-- REPLACE --></div>
+          <div class="fc__title"><!-- REPLACE --></div>
+          <div class="fc__desc"><!-- REPLACE --></div>
+        </li>
+        <!-- ↑ Duplicate <li class="fc"> for more cards -->
+      </ul>
+    </section>
+
+    <div class="sec-divider"></div>
+
+    <!-- ══════════════════════════════════════════════
+         SECTION 04 — Process flow + code block
+         Best for: step-by-step guides / workflows
+    ═══════════════════════════════════════════════ -->
+    <section class="section" id="section-04">
+      <div class="sec-header">
+        <div class="sec-header__num">04</div>
+        <div class="sec-header__meta">
+          <div class="sec-header__label"><!-- REPLACE: label --></div>
+          <h2 class="sec-header__title"><!-- REPLACE: title --></h2>
+        </div>
+      </div>
+
+      <div class="prose">
+        <p><!-- REPLACE: intro paragraph --></p>
+      </div>
+
+      <!-- Process flow: last step gets .pf-step--last (gold accent) -->
+      <ul class="process-flow" style="margin-top: var(--gap-lg);">
+        <li class="pf-step">
+          <div class="pf-step__num">Step 01</div>
+          <div class="pf-step__title"><!-- REPLACE: step title --></div>
+          <div class="pf-step__desc"><!-- REPLACE: step desc --></div>
+        </li>
+        <li class="pf-step">
+          <div class="pf-step__num">Step 02</div>
+          <div class="pf-step__title"><!-- REPLACE: step title --></div>
+          <div class="pf-step__desc"><!-- REPLACE: step desc --></div>
+        </li>
+        <li class="pf-step pf-step--last">
+          <div class="pf-step__num">Step 03</div>
+          <div class="pf-step__title"><!-- REPLACE: step title --></div>
+          <div class="pf-step__desc"><!-- REPLACE: step desc --></div>
+        </li>
+        <!-- ↑ Duplicate <li class="pf-step"> for more steps -->
+      </ul>
+
+      <!-- Optional code block -->
+      <div class="code-block" style="margin-top: var(--gap-xl);">
+        <div class="code-block__lang"><!-- REPLACE: language --></div>
+        <pre>
+<span class="cm">// REPLACE: code content</span>
+        </pre>
+      </div>
+    </section>
+
+    <div class="sec-divider"></div>
+
+    <!-- ══════════════════════════════════════════════
+         SUMMARY BOX — closing executive summary
+         Add .section class to trigger scroll-reveal
+    ═══════════════════════════════════════════════ -->
+    <div class="summary-box section">
+      <!-- REPLACE: summary label, e.g. "Executive Summary" -->
+      <div class="summary-box__label"><!-- REPLACE: label --></div>
+      <!-- REPLACE: summary title -->
+      <div class="summary-box__title"><!-- REPLACE: title --></div>
+      <p><!-- REPLACE: paragraph 1 --></p>
+      <p><!-- REPLACE: paragraph 2 --></p>
+    </div>
+
+  </div><!-- /content-wrap -->
+</main><!-- /main -->
+
+<script>
+/* ─── Mobile Menu Toggle ─────────────────────────────────────────────────── */
+function toggleNav() {
+  document.querySelector('.sidebar').classList.toggle('open');
+  document.querySelector('.mob-overlay').classList.toggle('open');
+  document.querySelector('.mob-menu-btn').classList.toggle('open');
+}
+
+/* ─── Particle Canvas ────────────────────────────────────────────────────── */
+(function () {
+  var canvas = document.getElementById('bg-canvas');
+  var ctx    = canvas.getContext('2d');
+  var W, H, pts;
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  function init() {
+    pts = [];
+    for (var i = 0; i < 55; i++) {
+      pts.push({
+        x:  Math.random() * W,
+        y:  Math.random() * H,
+        vx: (Math.random() - .5) * .28,
+        vy: (Math.random() - .5) * .28,
+        r:  Math.random() * 1.4 + .4
+      });
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    for (var i = 0; i < pts.length; i++) {
+      for (var j = i + 1; j < pts.length; j++) {
+        var dx   = pts[i].x - pts[j].x;
+        var dy   = pts[i].y - pts[j].y;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 110) {
+          ctx.beginPath();
+          ctx.strokeStyle = 'rgba(78,205,196,' + (1 - dist / 110) * .14 + ')';
+          ctx.lineWidth   = .5;
+          ctx.moveTo(pts[i].x, pts[i].y);
+          ctx.lineTo(pts[j].x, pts[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    pts.forEach(function (p) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(78,205,196,.38)';
+      ctx.fill();
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.x < 0 || p.x > W) p.vx *= -1;
+      if (p.y < 0 || p.y > H) p.vy *= -1;
+    });
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', function () { resize(); init(); });
+  resize();
+  init();
+  draw();
+}());
+
+/* ─── Scroll Reveal ──────────────────────────────────────────────────────── */
+(function () {
+  var sections = document.querySelectorAll('.section');
+  if (!window.IntersectionObserver) {
+    sections.forEach(function (s) { s.classList.add('visible'); });
+    return;
+  }
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.08 });
+  sections.forEach(function (s) { io.observe(s); });
+}());
+
+/* ─── Active Sidebar Link ────────────────────────────────────────────────── */
+(function () {
+  var links      = document.querySelectorAll('.sidebar__nav a');
+  var sectionIds = Array.prototype.map.call(links, function (a) {
+    return a.getAttribute('href').slice(1);
+  });
+
+  function update() {
+    var scrollY  = window.scrollY + 160;
+    var activeId = sectionIds[0];
+    sectionIds.forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el && el.offsetTop <= scrollY) activeId = id;
+    });
+    links.forEach(function (a) {
+      a.classList.toggle('active', a.getAttribute('href') === '#' + activeId);
+    });
+  }
+
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+}());
+</script>
+
+</body>
+</html>

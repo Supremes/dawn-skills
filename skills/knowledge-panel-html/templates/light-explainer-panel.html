@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<!--
+  light-explainer-panel.html
+  ─────────────────────────────────────────────────────────────────────────────
+  Reusable template for light-mode technical explainer / knowledge-panel pages.
+
+  STYLE DNA
+  ─────────────────────────────────────────────────────────────────────────────
+  • Light background (#F8FAFB / white) — NOT the dark-navy variant
+  • Primary accent: teal-green family (#2A9D8F primary, #1B7A70 dark, #5BC4B8 light)
+  • Eyebrow badge: small rounded pill chip with icon + teal label
+  • Hero: large bold sans-serif heading, muted subtitle
+  • Context-window panel: teal-tinted bordered box with horizontal gradient
+    flow-blocks (dark→light teal sequence, scrollable)
+  • Decision flow strip: numbered boxes + → arrow connectors, horizontal scroll
+  • Insight note: left teal border, italic muted callout below flow
+  • Feature grid: 4-column auto-fill icon-cards with mono code-styled titles
+  • Responsive: collapses to single-column on mobile (≤768 px), no sidebar
+
+  USAGE
+  ─────────────────────────────────────────────────────────────────────────────
+  1. Replace EVERY <!-- REPLACE: … --> comment with your own content.
+  2. Adjust --clr-* CSS variables at :root to re-skin.
+  3. Flow blocks, steps, and feature cards are all repeat HTML patterns —
+     duplicate or remove <li> / <div> items as needed.
+  4. The page is completely self-contained (no external deps, no build step).
+
+  COMPONENT QUICK-REF
+  ─────────────────────────────────────────────────────────────────────────────
+  .eyebrow                  Rounded teal pill chip above hero title
+  .hero-title               Bold display heading (clamp 1.7–2.4rem)
+  .hero-subtitle            Muted lead paragraph
+  .sec-header               Ghost numeral + teal mono label + bold title
+  .panel-box                Bordered context-window box containing .flow-blocks
+    .fb  .fb--1..5          Teal gradient flow blocks (dark→light)
+  .process-flow             Horizontal ordered step cards with → connectors
+    .pf-step--highlight     Teal-border highlighted final step
+  .insight-note             Left teal border italic callout below flow
+  .feature-grid             4-col auto-fill icon cards (.fc)
+  .concept-grid             Top-accent-border 2-col concept cards (.cc)  [optional]
+  .compare-table            Mono-header comparison table                  [optional]
+  .code-block               Dark code panel with language label            [optional]
+  .badge                    Inline mono chip: --teal | --gray | --warn | --danger
+-->
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><!-- REPLACE: page title --></title>
+  <style>
+    /* ─── Design Tokens ─────────────────────────────────────────────────── */
+    :root {
+      /* Palette */
+      --clr-bg:           #F8FAFB;
+      --clr-surface:      #FFFFFF;
+      --clr-border:       #D6E8E6;
+      --clr-border-light: #EBF4F3;
+
+      --clr-primary:      #2A9D8F;
+      --clr-primary-dark: #1B7A70;
+      --clr-primary-dim:  #E4F4F2;
+
+      /* Flow-block gradient (dark → light, 5 steps) */
+      --fb-1: #1B6E65;
+      --fb-2: #2A9D8F;
+      --fb-3: #3DBFB0;
+      --fb-4: #74D3C9;
+      --fb-5: #B2E8E3;
+
+      --clr-text:         #1A202C;
+      --clr-text-muted:   #5A6A72;
+      --clr-text-light:   #8FA3A8;
+      --clr-accent-badge: #E4F4F2;
+      --clr-insight-bg:   #F0FAF9;
+
+      /* Fluid Typography */
+      --text-base: clamp(1.125rem, 1.1rem + 0.25vw, 1.25rem);
+      --text-h1:   clamp(1.95rem, 3.25vw, 2.65rem);
+      --text-h2:   clamp(1.55rem, 2.75vw, 1.85rem);
+      --text-h3:   clamp(1.35rem, 2.05vw, 1.55rem);
+
+      /* Fluid Spacing */
+      --gap-xs:  .375rem;
+      --gap-sm:  .75rem;
+      --gap-md:  1.25rem;
+      --gap-lg:  clamp(1.25rem, 4vw, 2rem);
+      --gap-xl:  clamp(2rem, 6vw, 3rem);
+
+      /* Radii */
+      --r-sm:  6px;
+      --r-md: 12px;
+      --r-lg: 18px;
+
+      /* Shadows */
+      --shadow-card: 0 2px 10px rgba(42,157,143,.09), 0 1px 3px rgba(0,0,0,.06);
+    }
+
+    /* ─── Reset + Base ───────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+      background: var(--clr-bg);
+      color: var(--clr-text);
+      line-height: 1.7;
+      font-size: var(--text-base);
+    }
+
+    a { color: var(--clr-primary); text-decoration: none; text-underline-offset: 4px; }
+    a:hover { text-decoration: underline; }
+
+    /* ─── Utilities ──────────────────────────────────────────────────────── */
+    .mono { font-family: "SFMono-Regular", "Fira Code", "Consolas", monospace; }
+    .text-muted { color: var(--clr-text-muted); }
+    .text-small { font-size: .82rem; }
+    .bold { font-weight: 700; }
+    .teal { color: var(--clr-primary); }
+
+    /* ─── Page Shell ─────────────────────────────────────────────────────── */
+    .page-wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: var(--gap-xl) var(--gap-lg);
+    }
+
+    /* ─── Section Spacing ────────────────────────────────────────────────── */
+    .section { margin-top: var(--gap-xl); }
+    .section + .section { border-top: 1px solid var(--clr-border-light); padding-top: var(--gap-xl); }
+
+    /* ─── Eyebrow Badge ──────────────────────────────────────────────────── */
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--gap-xs);
+      border: 1.5px solid var(--clr-primary);
+      border-radius: var(--r-lg);
+      padding: .3rem .9rem;
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--clr-primary);
+      background: var(--clr-accent-badge);
+      letter-spacing: .03em;
+      margin-bottom: var(--gap-md);
+    }
+    .eyebrow svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+    /* ─── Hero ───────────────────────────────────────────────────────────── */
+    .hero-title {
+      font-size: var(--text-h1);
+      font-weight: 800;
+      line-height: 1.25;
+      color: var(--clr-text);
+      margin-bottom: var(--gap-sm);
+    }
+    .hero-subtitle {
+      font-size: 1rem;
+      color: var(--clr-text-muted);
+      max-width: 660px;
+    }
+
+    /* ─── Panel Box (context-window style) ──────────────────────────────── */
+    .panel-box {
+      border: 1.5px solid var(--clr-border);
+      border-radius: var(--r-lg);
+      background: var(--clr-surface);
+      padding: var(--gap-lg);
+      margin-top: var(--gap-lg);
+      position: relative;
+    }
+    .panel-box__label {
+      font-weight: 700;
+      font-size: .85rem;
+      color: var(--clr-text-muted);
+      margin-bottom: var(--gap-sm);
+    }
+    .panel-box__sublabel {
+      font-size: .76rem;
+      color: var(--clr-text-light);
+    }
+
+    /* ─── Flow Blocks (horizontal gradient row) ──────────────────────────── */
+    .flow-blocks {
+      display: flex;
+      gap: var(--gap-sm);
+      overflow-x: auto;
+      padding-bottom: var(--gap-xs);
+      list-style: none;
+      margin-top: var(--gap-md);
+    }
+    .flow-blocks::-webkit-scrollbar { height: 4px; }
+    .flow-blocks::-webkit-scrollbar-thumb { background: var(--clr-border); border-radius: 2px; }
+
+    .fb {
+      flex: 1 0 130px;
+      min-height: 76px;
+      border-radius: var(--r-md);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: var(--gap-sm) var(--gap-md);
+      color: #fff;
+      font-weight: 600;
+      font-size: .85rem;
+    }
+    .fb__sub {
+      font-size: .7rem;
+      font-weight: 400;
+      opacity: .85;
+      margin-top: 3px;
+    }
+    /* Assign gradient colours via modifier classes */
+    .fb--1 { background: var(--fb-1); }
+    .fb--2 { background: var(--fb-2); }
+    .fb--3 { background: var(--fb-3); }
+    .fb--4 { background: var(--fb-4); color: var(--clr-text); }
+    .fb--5 { background: var(--fb-5); color: var(--clr-text); }
+
+    /* ─── Decision / Process Flow ────────────────────────────────────────── */
+    .process-flow {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      overflow-x: auto;
+      margin-top: var(--gap-lg);
+      padding-bottom: var(--gap-xs);
+      list-style: none;
+    }
+    .pf-step {
+      flex: 1 0 160px;
+      border: 1.5px solid var(--clr-border);
+      border-radius: var(--r-md);
+      padding: var(--gap-md);
+      background: var(--clr-surface);
+      position: relative;
+    }
+    /* Arrow connector between steps */
+    .pf-step + .pf-step { margin-left: 28px; }
+    .pf-step + .pf-step::before {
+      content: "→";
+      position: absolute;
+      left: -22px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1.1rem;
+      color: var(--clr-primary);
+      font-weight: 700;
+    }
+    .pf-step__num {
+      font-size: .7rem;
+      font-weight: 700;
+      color: var(--clr-primary);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 4px;
+    }
+    .pf-step__title {
+      font-weight: 700;
+      font-size: .9rem;
+      color: var(--clr-text);
+      line-height: 1.3;
+    }
+    .pf-step__desc {
+      margin-top: 4px;
+      font-size: .75rem;
+      color: var(--clr-text-muted);
+      font-family: "SFMono-Regular", monospace;
+    }
+    /* Highlight last step */
+    .pf-step--highlight {
+      border-color: var(--clr-primary);
+      background: var(--clr-primary-dim);
+    }
+    .pf-step--highlight .pf-step__title { color: var(--clr-primary-dark); }
+
+    /* ─── Insight Note ───────────────────────────────────────────────────── */
+    .insight-note {
+      background: var(--clr-insight-bg);
+      border-left: 3px solid var(--clr-primary);
+      border-radius: 0 var(--r-sm) var(--r-sm) 0;
+      padding: .6rem 1rem;
+      margin-top: var(--gap-md);
+      font-size: .83rem;
+      color: var(--clr-text-muted);
+      font-style: italic;
+    }
+    .insight-note strong { color: var(--clr-text); font-style: normal; }
+
+    /* ─── Feature Card Grid ──────────────────────────────────────────────── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: var(--gap-md);
+      margin-top: var(--gap-lg);
+      list-style: none;
+    }
+    .fc {
+      background: var(--clr-surface);
+      border: 1.5px solid var(--clr-border-light);
+      border-radius: var(--r-md);
+      padding: var(--gap-md);
+      box-shadow: var(--shadow-card);
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .fc:hover {
+      border-color: var(--clr-primary);
+      box-shadow: 0 4px 16px rgba(42,157,143,.15);
+    }
+    .fc__icon {
+      width: 36px;
+      height: 36px;
+      margin-bottom: var(--gap-sm);
+      color: var(--clr-primary);
+    }
+    .fc__title {
+      font-family: "SFMono-Regular", "Fira Code", monospace;
+      font-weight: 700;
+      font-size: .88rem;
+      color: var(--clr-text);
+      margin-bottom: 4px;
+    }
+    .fc__desc {
+      font-size: .78rem;
+      color: var(--clr-text-muted);
+      line-height: 1.55;
+    }
+
+    /* ─── Two-Column Concept Cards ───────────────────────────────────────── */
+    .concept-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: var(--gap-md);
+      margin-top: var(--gap-lg);
+      list-style: none;
+    }
+    .cc {
+      background: var(--clr-surface);
+      border-top: 3px solid var(--clr-primary);
+      border-radius: 0 0 var(--r-md) var(--r-md);
+      padding: var(--gap-md);
+      box-shadow: var(--shadow-card);
+    }
+    .cc__heading {
+      font-weight: 700;
+      font-size: .9rem;
+      color: var(--clr-text);
+      margin-bottom: var(--gap-xs);
+    }
+    .cc__body {
+      font-size: .82rem;
+      color: var(--clr-text-muted);
+      line-height: 1.6;
+    }
+
+    /* ─── Section Header ─────────────────────────────────────────────────── */
+    .sec-header {
+      display: flex;
+      align-items: baseline;
+      gap: var(--gap-sm);
+      margin-bottom: var(--gap-md);
+    }
+    .sec-header__num {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--clr-primary-dim);
+      line-height: 1;
+      user-select: none;
+    }
+    .sec-header__label {
+      font-size: .7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--clr-primary);
+      font-family: monospace;
+    }
+    .sec-header__title {
+      font-size: var(--text-h3);
+      font-weight: 800;
+      color: var(--clr-text);
+    }
+
+    /* ─── Comparison Table ───────────────────────────────────────────────── */
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: var(--gap-md);
+      font-size: .83rem;
+    }
+    .compare-table th {
+      background: var(--clr-primary-dim);
+      color: var(--clr-primary-dark);
+      font-family: monospace;
+      font-size: .75rem;
+      letter-spacing: .06em;
+      text-align: left;
+      padding: .55rem .9rem;
+      border-bottom: 2px solid var(--clr-border);
+    }
+    .compare-table td {
+      padding: .55rem .9rem;
+      border-bottom: 1px solid var(--clr-border-light);
+      color: var(--clr-text);
+    }
+    .compare-table tr:hover td { background: var(--clr-accent-badge); }
+
+    /* ─── Badge Chips ────────────────────────────────────────────────────── */
+    .badge {
+      display: inline-block;
+      font-family: monospace;
+      font-size: .7rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      letter-spacing: .04em;
+    }
+    .badge--teal  { background: var(--clr-primary-dim); color: var(--clr-primary-dark); }
+    .badge--gray  { background: #EEF0F2; color: var(--clr-text-muted); }
+    .badge--warn  { background: #FFF4E0; color: #B56A00; }
+    .badge--danger{ background: #FEF2F2; color: #C0392B; }
+
+    /* ─── Code Block ─────────────────────────────────────────────────────── */
+    .code-block {
+      position: relative;
+      background: #0f172a;
+      border-radius: var(--r-md);
+      overflow: hidden;
+      margin-top: var(--gap-md);
+    }
+    .code-block__lang {
+      position: absolute;
+      top: .6rem;
+      right: .9rem;
+      font-family: monospace;
+      font-size: .65rem;
+      color: #7FDBCA;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .code-block pre {
+      padding: 1.2rem 1.4rem;
+      overflow-x: auto;
+      font-family: "SFMono-Regular", "Fira Code", monospace;
+      font-size: .80rem;
+      line-height: 1.65;
+      color: #E2E8F0;
+    }
+    .code-block pre .cm  { color: #6A9955; } /* comment */
+    .code-block pre .kw  { color: #79C0FF; } /* keyword */
+    .code-block pre .str { color: #A5D6FF; } /* string  */
+    .code-block pre .num { color: #F2CC60; } /* number  */
+    .code-block pre::-webkit-scrollbar { height: 6px; }
+    .code-block pre::-webkit-scrollbar-thumb { background: rgba(255,255,255,.2); border-radius: 4px; }
+
+    /* ─── Responsive ─────────────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .page-wrap { padding: var(--gap-lg) var(--gap-md); }
+      .flow-blocks {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: var(--gap-sm);
+        overflow-x: unset;
+      }
+      .process-flow { flex-direction: column; }
+      .pf-step + .pf-step { margin-left: 0; margin-top: var(--gap-md); }
+      .pf-step + .pf-step::before {
+        content: "↓";
+        left: 50%;
+        top: -20px;
+        transform: translateX(-50%);
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <!-- ══════════════════════════════════════════════
+       HERO
+  ════════════════════════════════════════════════ -->
+  <section class="section" id="hero">
+
+    <!-- Eyebrow badge: swap SVG icon freely -->
+    <div class="eyebrow">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <!-- REPLACE: inline SVG icon path(s) -->
+        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+        <path d="M8 21h8M12 17v4"/>
+      </svg>
+      <!-- REPLACE: eyebrow text, e.g. "先理解 Agent" -->
+    </div>
+
+    <!-- Page title -->
+    <h1 class="hero-title">
+      <!-- REPLACE: main heading -->
+    </h1>
+
+    <!-- Subtitle / lead: 1–2 sentences -->
+    <p class="hero-subtitle">
+      <!-- REPLACE: subtitle -->
+    </p>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 01 — CONTEXT WINDOW PANEL
+       Bordered panel box with horizontal gradient flow-blocks.
+       Duplicate or remove .fb items as needed.
+  ════════════════════════════════════════════════ -->
+  <section class="section" id="context">
+
+    <div class="sec-header">
+      <span class="sec-header__num">01</span>
+      <div>
+        <div class="sec-header__label"><!-- REPLACE: label --></div>
+        <div class="sec-header__title"><!-- REPLACE: title --></div>
+      </div>
+    </div>
+
+    <div class="panel-box">
+      <!-- REPLACE: optional .panel-box__label for a header line -->
+      <ul class="flow-blocks">
+
+        <!-- Flow block 1 (darkest teal) -->
+        <li class="fb fb--1">
+          <!-- REPLACE: block title -->
+          <span class="fb__sub"><!-- REPLACE: subtitle --></span>
+        </li>
+
+        <!-- Flow block 2 -->
+        <li class="fb fb--2">
+          <!-- REPLACE: block title -->
+          <span class="fb__sub"><!-- REPLACE: subtitle --></span>
+        </li>
+
+        <!-- Flow block 3 -->
+        <li class="fb fb--3">
+          <!-- REPLACE: block title -->
+          <span class="fb__sub"><!-- REPLACE: subtitle --></span>
+        </li>
+
+        <!-- Flow block 4 (lighter) -->
+        <li class="fb fb--4">
+          <!-- REPLACE: block title -->
+          <span class="fb__sub"><!-- REPLACE: subtitle --></span>
+        </li>
+
+        <!-- Flow block 5 (lightest) -->
+        <li class="fb fb--5">
+          <!-- REPLACE: block title -->
+          <span class="fb__sub"><!-- REPLACE: subtitle --></span>
+        </li>
+
+        <!-- ↑ Duplicate or remove .fb items as needed -->
+      </ul>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 02 — PROCESS / DECISION FLOW
+       Horizontal numbered steps connected by → arrows.
+       Add .pf-step--highlight to emphasize the last step.
+  ════════════════════════════════════════════════ -->
+  <section class="section" id="flow">
+
+    <div class="sec-header">
+      <span class="sec-header__num">02</span>
+      <div>
+        <div class="sec-header__label"><!-- REPLACE: label --></div>
+        <div class="sec-header__title"><!-- REPLACE: title --></div>
+      </div>
+    </div>
+
+    <ol class="process-flow">
+
+      <li class="pf-step">
+        <div class="pf-step__num">Step 1</div>
+        <div class="pf-step__title"><!-- REPLACE: step title --></div>
+        <div class="pf-step__desc"><!-- REPLACE: step desc --></div>
+      </li>
+
+      <li class="pf-step">
+        <div class="pf-step__num">Step 2</div>
+        <div class="pf-step__title"><!-- REPLACE: step title --></div>
+        <div class="pf-step__desc"><!-- REPLACE: step desc --></div>
+      </li>
+
+      <li class="pf-step">
+        <div class="pf-step__num">Step 3</div>
+        <div class="pf-step__title"><!-- REPLACE: step title --></div>
+        <div class="pf-step__desc"><!-- REPLACE: step desc --></div>
+      </li>
+
+      <!-- Last step: .pf-step--highlight for teal-border emphasis -->
+      <li class="pf-step pf-step--highlight">
+        <div class="pf-step__num">Step 4</div>
+        <div class="pf-step__title"><!-- REPLACE: final/output step --></div>
+        <div class="pf-step__desc"><!-- REPLACE: step desc --></div>
+      </li>
+
+      <!-- ↑ Duplicate <li class="pf-step"> for more steps -->
+    </ol>
+
+    <!-- Insight note: lives directly below the process flow -->
+    <div class="insight-note">
+      <!-- REPLACE: key insight — e.g. <strong>关键洞察：</strong>… -->
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       SECTION 03 — FEATURE CARD GRID
+       4-column auto-fill grid: SVG icon + mono title + desc.
+       Use any inline SVG or emoji inside .fc__icon.
+  ════════════════════════════════════════════════ -->
+  <section class="section" id="features">
+
+    <div class="sec-header">
+      <span class="sec-header__num">03</span>
+      <div>
+        <div class="sec-header__label"><!-- REPLACE: label --></div>
+        <div class="sec-header__title"><!-- REPLACE: title --></div>
+      </div>
+    </div>
+
+    <ul class="feature-grid">
+
+      <!-- Feature card 1 -->
+      <li class="fc">
+        <svg class="fc__icon" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.8">
+          <!-- REPLACE: SVG path(s) -->
+        </svg>
+        <div class="fc__title"><!-- REPLACE: mono title --></div>
+        <div class="fc__desc"><!-- REPLACE: description --></div>
+      </li>
+
+      <!-- Feature card 2 -->
+      <li class="fc">
+        <svg class="fc__icon" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.8">
+          <!-- REPLACE: SVG path(s) -->
+        </svg>
+        <div class="fc__title"><!-- REPLACE: mono title --></div>
+        <div class="fc__desc"><!-- REPLACE: description --></div>
+      </li>
+
+      <!-- Feature card 3 -->
+      <li class="fc">
+        <svg class="fc__icon" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.8">
+          <!-- REPLACE: SVG path(s) -->
+        </svg>
+        <div class="fc__title"><!-- REPLACE: mono title --></div>
+        <div class="fc__desc"><!-- REPLACE: description --></div>
+      </li>
+
+      <!-- Feature card 4 -->
+      <li class="fc">
+        <svg class="fc__icon" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1.8">
+          <!-- REPLACE: SVG path(s) -->
+        </svg>
+        <div class="fc__title"><!-- REPLACE: mono title --></div>
+        <div class="fc__desc"><!-- REPLACE: description --></div>
+      </li>
+
+      <!-- ↑ Duplicate <li class="fc">…</li> for more cards -->
+    </ul>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════
+       OPTIONAL SECTION — CONCEPT CARDS
+       Two-column cards with top accent border.
+       Use for definitions, comparisons, or breakdowns.
+  ════════════════════════════════════════════════ -->
+  <!--
+  <section class="section" id="concepts">
+    <div class="sec-header">
+      <span class="sec-header__num">04</span>
+      <div>
+        <div class="sec-header__label">CONCEPTS</div>
+        <div class="sec-header__title">核心概念</div>
+      </div>
+    </div>
+    <ul class="concept-grid">
+      <li class="cc">
+        <div class="cc__heading">概念名称</div>
+        <div class="cc__body">展开解释……</div>
+      </li>
+      <li class="cc">
+        <div class="cc__heading">概念名称</div>
+        <div class="cc__body">展开解释……</div>
+      </li>
+    </ul>
+  </section>
+  -->
+
+  <!-- ══════════════════════════════════════════════
+       OPTIONAL SECTION — COMPARISON TABLE
+  ════════════════════════════════════════════════ -->
+  <!--
+  <section class="section" id="compare">
+    <div class="sec-header">
+      <span class="sec-header__num">05</span>
+      <div>
+        <div class="sec-header__label">COMPARISON</div>
+        <div class="sec-header__title">方案对比</div>
+      </div>
+    </div>
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>维度</th>
+          <th>方案 A</th>
+          <th>方案 B</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>特性 1</td>
+          <td><span class="badge badge--teal">优 ✓</span></td>
+          <td><span class="badge badge--gray">一般</span></td>
+        </tr>
+        <tr>
+          <td>特性 2</td>
+          <td><span class="badge badge--warn">注意</span></td>
+          <td><span class="badge badge--teal">优 ✓</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+  -->
+
+  <!-- ══════════════════════════════════════════════
+       OPTIONAL SECTION — CODE BLOCK
+  ════════════════════════════════════════════════ -->
+  <!--
+  <section class="section" id="code">
+    <div class="sec-header">
+      <span class="sec-header__num">06</span>
+      <div>
+        <div class="sec-header__label">EXAMPLE</div>
+        <div class="sec-header__title">示例代码</div>
+      </div>
+    </div>
+    <div class="code-block">
+      <span class="code-block__lang">YAML</span>
+      <pre><span class="cm"># SKILL.md frontmatter example</span>
+<span class="kw">name</span>: my-skill
+<span class="kw">description</span>: <span class="str">"Triggered when user asks about X"</span>
+</pre>
+    </div>
+  </section>
+  -->
+
+</div><!-- /.page-wrap -->
+</body>
+</html>

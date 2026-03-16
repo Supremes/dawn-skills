@@ -5,112 +5,175 @@ description: "Use when creating or refactoring long-form HTML knowledge pages, t
 
 # Knowledge Panel HTML
 
-This skill generates polished, self-contained HTML knowledge pages using the **GitHub Primer light** visual style.
+Converts a structured Markdown document into a self-contained GitHub Primer–styled HTML page (two-column layout, sticky sidebar, dark code blocks). Template: `templates/github-style-panel.html`.
 
-Use this skill when the task is to:
-- generate a new long-form HTML page from Markdown or rough notes
-- convert topic notes into a polished single-file technical showcase page
-- keep the layout and information density consistent across multiple topic pages
+---
 
-## Design DNA
+## Input Contract
 
-The target style follows GitHub's Primer design system:
-- white `#ffffff` canvas with `#f6f8fa` subtle surfaces and `#d0d7de` borders
-- two-column layout: main content (left, wider) · 296 px sticky sidebar (right)
-- repo-style header: title + one-line description
-- GitHub Primer 5-variant alert boxes: Note / Tip / Important / Warning / Caution
-- dark code blocks (`#161b22`) with GitHub VS Code–like syntax colours
-- diff blocks with +/– green/red line highlighting
-- flat 6 px-radius cards — border + glow on hover, no drop shadows
-- collapsible `<details>` / `<summary>` blocks
-- sticky sidebar: TOC with active-link JS · About description box
-- clean & utilitarian — no particles, no glassmorphism, no heavy motion
-- fully responsive: single-column on ≤ 768 px (sidebar moves above content)
+Source Markdown **must** follow this structure for deterministic output:
 
-## Required Structure
+```
+# Title
+> One-line description (used in repo-header and About box)
 
-When generating a page, follow this macro structure:
+## Section Name   ← maps to one <section class="gh-section">
+...content...
 
-1. `<header class="repo-header">` — title + description only.
-2. `.gh-layout` two-column grid:
-   - **Left / main** (`.gh-content`): numbered `<section class="gh-section">` blocks.
-   - **Right / sidebar** (`.gh-sidebar`): TOC box first, then About box.
-3. Inside each section, mix content modules by topic:
-   - feature card grids (`.gh-card-grid`)
-   - numbered step lists (`.gh-step-list`)
-   - comparison tables (`.gh-table-wrap / .gh-table`)
-   - dark code panels (`.gh-code-block`)
-   - diff blocks (`.gh-diff`)
-   - alert callouts (`.gh-alert --note/tip/important/warning/caution`)
-   - collapsible details (`.gh-details`)
-4. Close with a summary panel (`.summary-panel`).
-5. Minimal JS: scroll-spy active TOC link + copy-code button.
+## Next Section
+...
+```
 
-## Style Rules
+Optional per-section frontmatter override (YAML comment at H2 line):
+```markdown
+## Section Name <!-- type: cards|steps|table|code|alert -->
+```
+When `type` is declared, skip the decision table below and use that component directly.
 
-Follow these rules exactly:
-- Typography: system sans-serif body, monospace for code/labels.
-- Palette: use only the `--gh-*` CSS variables already defined in `:root`.
-- Layout: do not add extra wrappers; use the grid and gap variables.
-- Components: only use classes defined in the template's `<style>` block.
-- Motion: none beyond the 0.15 s border transition on cards and TOC hover.
+---
+
+## Component Decision Rules
+
+Apply the **first matching rule** for each `##` section. Do not deviate.
+
+| Section content pattern | Required component |
+|---|---|
+| H2 with `<!-- type: X -->` override | Use X directly |
+| ≥3 H3 blocks, each 2–5 lines of prose | `.gh-card-grid` |
+| Ordered list with clear sequential steps | `.gh-step-list` |
+| Markdown table or ≥2 columns of comparison | `.gh-table-wrap > .gh-table` |
+| Fenced code block(s) as primary content | `.gh-code-block` |
+| `> [!NOTE]` / `> [!TIP]` / `> [!WARNING]` / `> [!IMPORTANT]` / `> [!CAUTION]` | `.gh-alert --note/tip/warning/important/caution` |
+| `> [!INFO]` / `> [!QUOTE]` / `> [!EXAMPLE]` | `.gh-alert--note` |
+| `> [!SUCCESS]` | `.gh-alert--tip` |
+| `> [!DANGER]` | `.gh-alert--caution` |
+| `> [!ABSTRACT]` | `.gh-alert--important` |
+| `<details>` or Q&A / expandable content | `.gh-details` |
+| Diff / before-after code comparison | `.gh-diff` |
+| Final section titled "总结" / "Summary" / "TL;DR" | `.summary-panel` |
+| Anything else | prose `<p>` inside `.gh-section`, no extra wrapper |
+
+---
+
+## Required Page Structure
+
+```
+<header class="repo-header">          ← H1 title + > description
+<div class="gh-layout">
+  <main class="gh-content">
+    <section class="gh-section" id="...">   ← one per H2
+      [component from Decision Rules]
+    </section>
+    ...
+    <div class="summary-panel">...</div>    ← last section only
+  </main>
+  <aside class="gh-sidebar">
+    <div class="toc-box">...</div>          ← TOC first
+    <div class="about-box">...</div>        ← About second
+  </aside>
+</div>
+```
+
+Minimal JS: scroll-spy TOC active link + copy-code button. No other scripts.
+
+---
+
+## CSS Policy
+
+**Do NOT regenerate CSS.** Copy the exact `<style>` block verbatim from `templates/github-style-panel.html`. The CSS is frozen.
+
+- Use only `--gh-*` variables for color; do not add new variables.
+- Do not invent class names. If a content need cannot be met by an existing class, adapt the closest available component.
+- Do not add inline `style=""` attributes except for `background-color` on syntax-highlighted `<span>` tokens.
+
+---
 
 ## Image Handling
 
-When the source Markdown contains images (`![alt](url)`), **always preserve them** in the generated HTML.
+Every `![alt](src)` must be preserved. Wrap in `.gh-figure`:
 
-Rules:
-- Scan the entire source file for all `![alt](url)` image references before generating HTML.
-- For **remote URLs** (`http://` / `https://`): embed directly as `<img src="url" alt="alt">`.
-- For **local relative paths** (e.g. `./img/foo.png`): use the path as-is; note it only works when the HTML is served from the same directory.
-- Wrap every image in `.gh-figure` (defined in the template `<style>` block). Add `.gh-figure__caption` if the source provides meaningful alt text or surrounding caption text.
-- Place the figure at the same logical position in the HTML as the image appears in the Markdown (i.e. within its surrounding section/paragraph context).
-- Never silently drop images — if you cannot determine the path, include a visible `<!-- IMAGE: original-src -->` placeholder comment so the author can fix it manually.
-
-Component usage:
 ```html
 <figure class="gh-figure">
-  <img src="https://example.com/image.webp" alt="AQS 内部结构" />
-  <figcaption class="gh-figure__caption">图：AQS 宏观内部结构</figcaption>
+  <img src="URL_OR_RELATIVE_PATH" alt="alt text" />
+  <figcaption class="gh-figure__caption">alt text</figcaption>
 </figure>
 ```
 
-## Content Mapping Guidance
+- Remote `http(s)://` → embed directly.  
+- Local path → use as-is (works when HTML is served from same directory).  
+- Unknown path → `<!-- IMAGE: original-src -->` placeholder, never silently drop.
 
-Map content into modules based on semantics:
-- concept definitions -> two-column cards
-- lifecycle or protocol flow -> ordered flow steps or code block sequence
-- standards comparison -> table
-- recommendations or risk levels -> badge + bordered cards
-- future directions -> compact trend cards
-- executive summary -> highlighted closing summary box
+---
 
-## Output Expectations
+## Two-Phase Workflow
 
-When using this skill for a new page:
-- prefer a single self-contained HTML file unless the user requests extraction
-- keep CSS variables at the top for easy theming
-- preserve semantic section ids for sidebar navigation
-- make the page immediately viewable in a browser without build tooling
-- adapt copy to the new topic instead of mechanically cloning the original page
+### Phase 1 — Programmatic extraction (no LLM, run locally)
 
-## Template
+```bash
+python3 skills/knowledge-panel-html/md2outline.py <input.md> <output.json>
+```
 
-The single template is `templates/github-style-panel.html`.
+`md2outline.py` parses the Markdown following the Input Contract and emits a
+deterministic JSON outline.  It applies the Component Decision Rules in code,
+so the LLM never needs to decide which component to use.
 
-### ⚠️ Strict Component Constraint
+Output schema:
+```json
+{
+  "title": "...",
+  "description": "...",
+  "images": [{"alt": "...", "src": "..."}],
+  "sections": [
+    {
+      "id": "slug-01",
+      "num": "01",
+      "h2": "Section Title",
+      "type": "cards|steps|table|code|alert|details|diff|prose|summary",
+      "raw": "<verbatim section body in Markdown>",
+      "items": "..."
+    }
+  ]
+}
+```
 
-**Only use CSS classes that are explicitly defined in the chosen template's `<style>` block.**
+`items` is pre-parsed per type:
+- **cards** → `[{"title", "body"}, ...]`
+- **steps** → `[{"title", "body"}, ...]`
+- **table** → `{"headers": [...], "rows": [[...]]}`
+- **code** → `[{"lang", "content"}, ...]`
+- **alert** → `{"variant": note|tip|warning|important|caution, "title": str, "blocks": [{"type":"p","text":str} | {"type":"ul","items":[str]}], "body": str}`
+  - `title` — custom label from `> [!VARIANT] Title Text` (may be empty)
+  - `blocks` — ordered content blocks; `"p"` → prose paragraph, `"ul"` → unordered list
+  - `body` — flat back-compat string (prose + `- item` lines joined by `\n`)
+- **details** → `[{"summary", "body"}, ...]`
+- **prose / summary / diff** → cleaned string
 
-- Do NOT invent new component classes (e.g. `gh-badge`, `stat-row`, `lang-box`, `lang-bar`) even if they are mentioned in the template's comment/description.
-- Do NOT copy components from a different template into the generated file.
-- The template's COMPONENT QUICK-REF is the authoritative list of available classes. Components listed there but absent from the `<style>` block are documentation notes only — do not implement them.
-- If a content need cannot be met by an existing template component, adapt the closest available component rather than creating a new one.
+### Phase 2 — LLM fills the template
 
-Template: `templates/github-style-panel.html` — GitHub Primer light, two-column docs layout.
+Feed the LLM **only**:
+1. The JSON outline from Phase 1 (≈60–80% smaller than the original Markdown)
+2. This prompt:
 
-## Implementation Notes
+```
+You are filling the template `templates/github-style-panel.html`.
 
-- Keep inline CSS and JS if the output is meant to be portable.
-- If the user already has a site design system, port only the information architecture and section modules, not the full color system.
-- If the user asks for a lighter variant, keep the same structure but swap the palette instead of changing the layout grammar.
+Rules:
+- Copy the ENTIRE <style> block verbatim from the template. Do NOT regenerate CSS.
+- For each section in the outline, use EXACTLY the component its `type` field specifies.
+- section id attributes must match the outline `id` values exactly.
+- Do not add components, wrappers, or classes beyond what the template defines.
+- Preserve all images from the `images` array using .gh-figure.
+- The last section with type "summary" must use .summary-panel (not .gh-section).
+
+Alert rendering rules (applies to ALL .gh-alert blocks, regardless of section type):
+- `.gh-alert__title` text = items.title if non-empty, else the default variant label (e.g. "💡 Tip").
+- Render each block in `items.blocks` in order:
+  - `{"type": "p"}` → `<p>text</p>`
+  - `{"type": "ul"}` → `<ul><li>item</li>…</ul>`
+- NEVER use `<br>` or bullet characters (•, -, *) as substitutes for list items.
+- When rendering alerts from `raw` markdown in mixed sections, apply the same rule:
+  any `- item` lines inside a `> ` blockquote must become `<ul><li>` elements.
+
+Output a single self-contained HTML file.
+```
+
